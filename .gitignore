@@ -1,0 +1,6 @@
+__pycache__/
+.venv/
+
+builder.py 
+check_proxies.py 
+valid_proxies.txt
