@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from test import scrape_product_details_builder_mart
 from google import scrape_product_details_google
@@ -6,24 +7,42 @@ import json
 
 app = FastAPI()
 
+# Add CORS middleware to allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+
 # Define the request body structure
-class ItemRequest(BaseModel):
+class ItemRequest_form1(BaseModel):
     item_name: str
     seller: str = None
     model: str = None
 
-@app.post("/scrape-products/construction")
-def scrape_products(request: ItemRequest):
+category_functions_form1 = {
+    "construction": [scrape_product_details_builder_mart, scrape_product_details_google],
+    "medical": [scrape_product_details_google],
+    "electronics": [scrape_product_details_google],
+}
+
+@app.post("/scrape-make-model/{category}")
+def scrape_products(category: str, request: ItemRequest_form1):
     # Scrape the product details from both sources
-    result_json1 = scrape_product_details_builder_mart(request.item_name, request.seller, request.model)
-    result_json2 = scrape_product_details_google(request.item_name, request.seller, request.model)
+    if category not in category_functions_form1:
+        raise HTTPException(status_code=404, detail=f"Category '{category}' not found.")
 
-    # Convert the JSON strings to Python lists
-    result_list1 = json.loads(result_json1) if result_json1 else []
-    result_list2 = json.loads(result_json2) if result_json2 else []
+    scraping_functions = category_functions_form1[category]
 
-    # Combine the two lists
-    combined_results = result_list1 + result_list2
+    combined_results = []
+
+    # Execute the scraping functions and combine results
+    for func in scraping_functions:
+        result_json = func(request.item_name, request.seller, request.model)
+        result_list = json.loads(result_json) if result_json else []
+        combined_results.extend(result_list)
 
     if not combined_results:
         raise HTTPException(status_code=404, detail="No products found.")

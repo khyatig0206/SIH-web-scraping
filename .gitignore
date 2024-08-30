@@ -4,3 +4,5 @@ __pycache__/
 builder.py 
 check_proxies.py 
 valid_proxies.txt
+googlesele.py
+goog.py

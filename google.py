@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 import json
 from bs4 import BeautifulSoup
@@ -74,14 +75,27 @@ def scrape_product_details_google(item_name, seller=None, model=None):
                 price = price.text.strip()
             else:
                 continue
-
-            # Extract the href link
-            link_tag = container.find('a', class_='xCpuod')
+            rating = container.find('span', class_='Rsc7Yb').text if container.find('span', class_='Rsc7Yb') else 'No rating'
+            div_rev = container.find('div', class_='qSSQfd uqAnbd') 
+            if div_rev:
+                text = div_rev.find_next_sibling(text=True)
+                reviews = text.strip()
+            else:
+                reviews = "No Reviews"
+            specifications = container.find('div', class_='F7Kwhf').text if container.find('div', class_='F7Kwhf') else 'No specifications'
+            
+            # div_img = soup.find('div', class_='ArOc1c')
+            # if div_img:
+            #     img_src = div_img.find('img')['src']
+            # else:
+            #     img_src = "No Image"
+                    
+            link_tag = container.find('a', class_='shntl')
             href = link_tag['href'] if link_tag else None
 
             # Extract the website name from the href
             website = href.split("url=")[-1].split("%")[0] if href else None
-
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             # Apply filters based on seller and model
             if model:
                 if (seller and seller.lower() in product_name.lower()) and (model and model.lower() in product_name.lower()):
@@ -90,7 +104,11 @@ def scrape_product_details_google(item_name, seller=None, model=None):
                         "Product Name": product_name,
                         "Seller": manufacturer,
                         "Price": price,
-                        "Website": website
+                        "Rating":rating,
+                        "Reviews":reviews,
+                        "specifications":specifications,
+                        "Website": website,
+                        "last_updated":current_time
                     })
             elif seller:
                 if (seller and seller.lower() in product_name.lower()):
@@ -99,18 +117,26 @@ def scrape_product_details_google(item_name, seller=None, model=None):
                         "Product Name": product_name,
                         "Seller": manufacturer,
                         "Price": price,
-                        "Website": website
+                        "Rating":rating,
+                        "Reviews":reviews,
+                        "specifications":specifications,
+                        "Website": website,
+                        "last_updated":current_time
                     })
             else:
                 result_list.append({
                         "Product Name": product_name,
                         "Seller": manufacturer,
                         "Price": price,
-                        "Website": website
+                        "Rating":rating,
+                        "Reviews":reviews,
+                        "specifications":specifications,
+                        "Website": website,
+                        "last_updated":current_time
                     })
 
-        except AttributeError:
-            print("Attribute error occurred while processing a product.")
+        except Exception as e:
+            print(e)
             continue
 
     # Return the result list as a JSON object
